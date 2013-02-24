@@ -1,5 +1,6 @@
 require "middleman-core"
 require "fileutils"
+require "parallel"
 
 # CLI Module
 module Middleman::Cli
@@ -269,7 +270,7 @@ module Middleman::Cli
       end
 
       # Loop over all the paths and build them.
-      resources.each do |resource|
+      ::Parallel.map(resources) do |resource|
         next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
 
         output_path = base.render_to_file(resource)
