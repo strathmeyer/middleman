@@ -1,6 +1,8 @@
 require "middleman-core"
 require "fileutils"
 require "parallel"
+require "thread"
+Thread.abort_on_exception=true
 
 # CLI Module
 module Middleman::Cli
@@ -26,6 +28,11 @@ module Middleman::Cli
       :aliases => "-g",
       :default => nil,
       :desc    => 'Build a subset of the project'
+    method_option :parallel,
+      :type    => :boolean,
+      :aliases => "-p",
+      :default => true,
+      :desc    => 'Build in parallel'
     method_option :verbose,
       :type    => :boolean,
       :default => false,
@@ -62,6 +69,7 @@ module Middleman::Cli
       opts = {}
       opts[:glob]  = options["glob"]  if options.has_key?("glob")
       opts[:clean] = options["clean"] if options.has_key?("clean")
+      opts[:parallel] = options["parallel"] if options.has_key?("parallel")
 
       action GlobAction.new(self, opts)
 
@@ -155,12 +163,16 @@ module Middleman::Cli
         @had_errors = true
 
         say_status :error, file_name, :red
-        if self.debugging
+
+        if options["parallel"]
           raise e
-          exit(1)
         elsif options["verbose"]
           self.shell.error(response)
+        elsif self.debugging
+          raise e
+          exit(1)
         end
+
       end
     }
   end
@@ -282,10 +294,15 @@ module Middleman::Cli
         end
       else
 
-        # Loop over all the paths and build them in parallel
-        ::Parallel.map(resources) do |resource|
-          next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
-          base.render_to_file(resource)
+        # we catch any exception from the threads, then indicate on the main thread that errors have occured
+        begin
+          # Loop over all the paths and build them in parallel
+          ::Parallel.map(resources) do |resource|
+            next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
+            base.render_to_file(resource)
+          end
+        rescue Exception
+          base.had_errors = true
         end
 
       end
