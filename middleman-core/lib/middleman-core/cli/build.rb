@@ -118,6 +118,7 @@ module Middleman::Cli
       # @param [Middleman::Sitemap::Resource] resource
       # @return [String] The full path of the file that was written
       def render_to_file(resource)
+
         build_dir = self.class.shared_instance.config[:build_dir]
         output_file = File.join(build_dir, resource.destination_path)
 
@@ -269,19 +270,28 @@ module Middleman::Cli
         sort_order.index(r.ext) || 100
       end
 
-      # Loop over all the paths and build them.
-      ::Parallel.map(resources) do |resource|
-        next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
-
-        output_path = base.render_to_file(resource)
-
-        if cleaning?
+      # Cleaning requires thread synchronization, given that there is no point guessing how many threads to use
+      # and the real build speed benefit will come from splitting on CPU count. Lets spltit the logic here.
+      if cleaning?
+        # Loop over all the paths and build them, checking for dirty ones
+        resources.each do |resource|
+          next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
+          output_path = base.render_to_file(resource)
           pn = Pathname(output_path)
           @cleaning_queue.delete(pn.realpath) if pn.exist?
         end
+      else
+
+        # Loop over all the paths and build them in parallel
+        ::Parallel.map(resources) do |resource|
+          next if @config[:glob] && !File.fnmatch(@config[:glob], resource.destination_path)
+          base.render_to_file(resource)
+        end
+
       end
 
       ::Middleman::Profiling.report("build")
+
     end
   end
 
