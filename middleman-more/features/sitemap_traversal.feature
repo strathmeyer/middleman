@@ -8,7 +8,7 @@ Feature: Step through sitemap as a tree
     Then I should see "Child: sub/index.html"
     Then I should see "Child: root.html"
     Then I should not see "Child: proxied.html"
-  
+
   Scenario: Directories have children and a parent
     Given the Server is running at "traversal-app"
     When I go to "/sub/index.html"
@@ -32,7 +32,7 @@ Feature: Step through sitemap as a tree
     Then I should see "Child: sub/sibling2.html"
     Then I should see "Child: sub/sub2/index.html"
     Then I should see "Sibling: root.html"
-    
+
   Scenario: Page has siblings, parent, and source file
     Given the Server is running at "traversal-app"
     When I go to "/sub/sibling/"
@@ -42,7 +42,7 @@ Feature: Step through sitemap as a tree
     Then I should see "Sibling: sub/sibling2.html"
     Then I should see "Sibling: sub/sub2/index.html"
     Then I should see "Source: source/sub/sibling.html.erb"
-  
+
   Scenario: Proxied page has siblings, parent, and source file
     Given the Server is running at "traversal-app"
     When I go to "/sub/fake/"
@@ -56,7 +56,7 @@ Feature: Step through sitemap as a tree
 
   Scenario: Child pages have data
     Given the Server is running at "traversal-app"
-    When I go to "/directory-indexed"
+    When I go to "/sub"
     Then I should see "Title of Sibling One"
     Then I should see "Title of Sibling Two"
 
@@ -67,7 +67,4 @@ Feature: Step through sitemap as a tree
     Then I should see "Parent: index.html"
     Then I should see "Child: directory-indexed/fake.html"
     Then I should see "Child: directory-indexed/fake2.html"
-    Then I should see "Child: directory-indexed/sibling.html"
-    Then I should see "Child: directory-indexed/sibling2.html"
-    Then I should see "Child: directory-indexed/sub2/index.html"
     Then I should see "Sibling: root.html"
